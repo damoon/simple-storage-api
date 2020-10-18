@@ -11,10 +11,10 @@ fn main() {
     //list(&some_numbers);
 
     let some_tuple = (1, "stefan", [1, 2, 3]);
-    let rev = features::reverse((some_tuple.0, some_tuple.1));
+    let rev = features::tools::reverse((some_tuple.0, some_tuple.1));
     println!("{:?}", rev.1);
 
-    features::output::do_foo(3);
+    features::tools::do_foo(3);
 
     let p_stefan = features::Person {
         name: String::from("Stefan"),
