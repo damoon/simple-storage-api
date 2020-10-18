@@ -2,6 +2,7 @@
 
 // use std::io::{stdout, BufWriter};
 //use features;
+
 mod features;
 
 use std::env;
@@ -24,6 +25,16 @@ fn main() {
         age: args[2].parse::<u8>().unwrap(),
         role: role,
     };
+
+    let db = features::db::get_database();
+    let key: i32 = 1;
+    let val: [u8; 3] = [1, 2, 3];
+
+    features::db::store(&db, &key, &val);
+
+    let res = features::db::read(&db, &key);
+
+    println!("{:#?}", res);
 
     // features::tools::do_foo(3);
 
