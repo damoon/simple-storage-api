@@ -14,7 +14,7 @@ fn main() {
     let rev = features::reverse((some_tuple.0, some_tuple.1));
     println!("{:?}", rev.1);
 
-    features::do_foo(3);
+    features::output::do_foo(3);
 
     let p_stefan = features::Person {
         name: String::from("Stefan"),
@@ -28,8 +28,8 @@ fn main() {
         ..p_stefan
     };
 
-    features::show_person(p_stefan);
-    features::show_person(p_basti);
+    features::output::show_person(p_stefan);
+    features::output::show_person(p_basti);
 
     // let stdout = stdout();
     // let message = String::from("Hello fellow Rustaceans 23!");
