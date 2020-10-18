@@ -1,5 +1,6 @@
 pub fn show_person(person: super::Person) {
     println!("{}: {}, {:?}", person.name, person.age, person.role);
+    println!("{}", person.role_name());
 }
 
 #[allow(dead_code)]

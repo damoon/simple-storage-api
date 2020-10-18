@@ -12,3 +12,10 @@ pub struct Person {
     pub age: i8,
     pub role: Role,
 }
+
+impl Person {
+    pub fn role_name(&self) -> String {
+        let ret = format!("{}{}", self.name, self.age);
+        ret
+    }
+}
