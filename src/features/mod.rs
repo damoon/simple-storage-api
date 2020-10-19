@@ -20,6 +20,7 @@ pub struct Person {
 }
 
 impl Person {
+    #[allow(dead_code)]
     pub fn role_name(&self) -> String {
         let s_age = self.age.to_string();
         let ret = self.name.clone() + &s_age;

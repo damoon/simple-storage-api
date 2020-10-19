@@ -1,5 +1,5 @@
 [package]
-name = "hello-rust"
+name = "simple-storage-api"
 version = "0.1.0"
 authors = ["Stefan Adolf <stefan.adolf@turbinekreuzberg.com>"]
 edition = "2018"

@@ -1,24 +1,22 @@
+extern crate hex;
+
 mod features;
 
 use multihash::Keccak224;
-use std::env;
-use std::str::FromStr;
-use tide::prelude::*;
 use tide::Request;
-extern crate hex;
 
 #[allow(dead_code)]
 #[async_std::main]
 async fn main() -> tide::Result<()> {
     tide::log::start();
     let mut app = tide::new();
-    app.at("/:hx").get(say_hello);
+    app.at("/:hx").get(get_item);
     app.at("/").post(add_item);
     app.listen("127.0.0.1:8080").await?;
     Ok(())
 }
 
-async fn say_hello(mut req: Request<()>) -> tide::Result {
+async fn get_item(req: Request<()>) -> tide::Result {
     let hx: &str = req.param("hx").unwrap_or("0");
     let bytes = hex::decode(hx).unwrap();
     let mut db = features::db::get_database();
@@ -35,5 +33,5 @@ async fn add_item(mut req: Request<()>) -> tide::Result {
     let mut db = features::db::get_database();
     features::db::store(&mut db, &hash, &serialized);
 
-    Ok(format!("{:#?}", hex::encode(hash)).into())
+    Ok(format!("{}", hex::encode(hash)).into())
 }

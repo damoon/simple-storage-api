@@ -833,23 +833,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hello-rust"
-version = "0.1.0"
-dependencies = [
- "async-std",
- "ferris-says",
- "hex",
- "multihash",
- "rusty-leveldb",
- "serde",
- "serde_cbor",
- "serde_json",
- "strum",
- "strum_macros",
- "tide",
-]
-
-[[package]]
 name = "hermit-abi"
 version = "0.1.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1418,6 +1401,23 @@ dependencies = [
  "digest",
  "keccak",
  "opaque-debug 0.3.0",
+]
+
+[[package]]
+name = "simple-storage-api"
+version = "0.1.0"
+dependencies = [
+ "async-std",
+ "ferris-says",
+ "hex",
+ "multihash",
+ "rusty-leveldb",
+ "serde",
+ "serde_cbor",
+ "serde_json",
+ "strum",
+ "strum_macros",
+ "tide",
 ]
 
 [[package]]

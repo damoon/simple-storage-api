@@ -1,3 +1,4 @@
+#[allow(dead_code)]
 pub fn show_person(person: super::Person) {
     println!(
         "[person> name: {}: age:{}, role:{}",
