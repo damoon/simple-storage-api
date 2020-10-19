@@ -1,0 +1,14 @@
+POST http://127.0.0.1:8080/
+Content-Type: application/json
+
+{
+    "name": "Stefan",
+    "age": 42,
+    "role": "Admin"
+}
+
+###
+
+GET http://127.0.0.1:8080/1a1c2fcb89a0f125e12a798836ffea29d176a75c65695b46728220e15537
+Content-Type: application/json
+

@@ -7,7 +7,6 @@ pub fn get_database() -> DB {
     let path = Path::new("./.db");
     let mut options = Options::default();
     options.create_if_missing = true;
-
     let db = DB::open(&path, options).unwrap();
     db
 }
