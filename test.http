@@ -4,7 +4,7 @@ Content-Type: application/json
 {
     "name": "Stefan",
     "age": 42,
-    "role": "Admin"
+    "role": "ADMIN"
 }
 
 ###

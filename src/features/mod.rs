@@ -8,8 +8,9 @@ use strum_macros::{Display, EnumString};
 //#[strum(serialize_all = "shouty_snake_case")]
 #[derive(Serialize, Deserialize, Debug, PartialEq, EnumString, Display)]
 pub enum Role {
-    Admin,
-    Greenhorn,
+    ADMIN,
+    USER,
+    GREENHORN,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
