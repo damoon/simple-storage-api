@@ -2,7 +2,8 @@ extern crate hex;
 
 mod features;
 
-use multihash::Keccak224;
+use multihash::{Code};
+use multihash::MultihashDigest;
 use tide::Request;
 use tide::Response;
 use tide::StatusCode;
@@ -45,9 +46,10 @@ async fn get_item(req: Request<()>) -> tide::Result {
 async fn add_item(mut req: Request<()>) -> tide::Result {
     let person: features::Person = req.body_json().await?;
     let serialized = serde_cbor::to_vec(&person)?;
-    let hash = Keccak224::digest(&serialized);
-    log::info!("putting: {:#?}", hex::encode(&hash));
+    let hash = Code::Keccak224.digest(&serialized);
+    let digest = hash.digest();
+    log::info!("putting: {:#?}", hex::encode(digest));
     let mut db = features::db::get_database()?;
-    features::db::store(&mut db, &hash, &serialized)?;
-    Ok(format!("{}", hex::encode(hash)).into())
+    features::db::store(&mut db, digest, &serialized)?;
+    Ok(format!("{}", hex::encode(digest)).into())
 }
