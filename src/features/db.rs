@@ -1,20 +1,19 @@
 use rusty_leveldb::{Options, DB};
-
 use std::path::Path;
 use std::vec::Vec;
 
-pub fn get_database() -> DB {
+pub fn get_database() -> Result<DB, rusty_leveldb::Status>{
     let path = Path::new("./.db");
     let mut options = Options::default();
     options.create_if_missing = true;
-    let db = DB::open(&path, options).unwrap();
-    db
+    DB::open(&path, options)
 }
-pub fn store(db: &mut DB, key: &[u8], value: &[u8]) {
-    db.put(key, value).unwrap();
+pub fn store(db: &mut DB, key: &[u8], value: &[u8]) -> Result<(), rusty_leveldb::Status>{
+    db.put(key, value)?;
+    db.flush()?;
+    Ok(())
 }
 
-pub fn read(db: &mut DB, key: &[u8]) -> Vec<u8> {
-    let res = db.get(key).unwrap();
-    res.as_slice().to_vec()
+pub fn read(db: &mut DB, key: &[u8]) -> Option<Vec<u8>> {
+    db.get(key)
 }

@@ -19,3 +19,5 @@ multihash = "*"
 tide = "0.14.0"
 async-std = { version = "1.6.0", features = ["attributes"] }
 hex = "0.4.2"
+log = "0.4.11"
+env_logger = "0.8.2"
