@@ -26,9 +26,9 @@ async fn get_item(req: Request<()>) -> tide::Result {
         Err(e) => {
             let mut resp = Response::new(StatusCode::BadRequest);
             resp.set_error(e);
-            return Ok(resp)
+            return Ok(resp);
         }
-        val => val
+        val => val,
     }?;
 
     let mut db = features::db::get_database()?;
@@ -38,7 +38,7 @@ async fn get_item(req: Request<()>) -> tide::Result {
             let deserialized: features::Person = serde_cbor::from_slice(&v).unwrap();
             Ok(format!("{:#?}", deserialized).into())
         }
-        None => Ok(Response::new(StatusCode::NotFound))
+        None => Ok(Response::new(StatusCode::NotFound)),
     }
 }
 
