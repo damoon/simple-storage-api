@@ -1,5 +1,8 @@
 extern crate hex;
 
+#[macro_use]
+extern crate lazy_static;
+
 mod features;
 
 use multihash::{Code};
@@ -7,15 +10,20 @@ use multihash::MultihashDigest;
 use tide::Request;
 use tide::Response;
 use tide::StatusCode;
+use std::sync::{Arc, Mutex};
+use rusty_leveldb::DB;
 
-#[allow(dead_code)]
+lazy_static! {
+    static ref DB_CONN: Arc<Mutex<DB>> = Arc::new(Mutex::new(features::db::get_database().unwrap()));
+}
+
 #[async_std::main]
 async fn main() -> tide::Result<()> {
     tide::log::start();
     let mut app = tide::new();
     app.at("/:hx").get(get_item);
     app.at("/").post(add_item);
-    app.listen("127.0.0.1:8081").await?;
+    app.listen("127.0.0.1:8080").await?;
     Ok(())
 }
 
@@ -32,7 +40,7 @@ async fn get_item(req: Request<()>) -> tide::Result {
         val => val,
     }?;
 
-    let mut db = features::db::get_database()?;
+    let mut db = DB_CONN.lock().unwrap();
     let res = features::db::read(&mut db, &bytes);
     match res {
         Some(v) => {
@@ -49,7 +57,7 @@ async fn add_item(mut req: Request<()>) -> tide::Result {
     let hash = Code::Keccak224.digest(&serialized);
     let digest = hash.digest();
     log::info!("putting: {:#?}", hex::encode(digest));
-    let mut db = features::db::get_database()?;
+    let mut db = DB_CONN.lock().unwrap();
     features::db::store(&mut db, digest, &serialized)?;
     Ok(format!("{}", hex::encode(digest)).into())
 }

@@ -3,6 +3,7 @@ use std::path::Path;
 use std::vec::Vec;
 
 pub fn get_database() -> Result<DB, rusty_leveldb::Status>{
+    log::info!("opening database");
     let path = Path::new("./.db");
     let mut options = Options::default();
     options.create_if_missing = true;
