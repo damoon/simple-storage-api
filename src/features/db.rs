@@ -1,16 +1,20 @@
-use rusty_leveldb::{Options, DB, LdbIterator};
+use rusty_leveldb::{LdbIterator, Options, DB};
 use std::path::Path;
-use std::vec::Vec;
 use std::sync::MutexGuard;
+use std::vec::Vec;
 
-pub fn get_database() -> Result<DB, rusty_leveldb::Status>{
+pub fn get_database() -> Result<DB, rusty_leveldb::Status> {
     log::info!("opening database");
     let path = Path::new("./.db");
     let mut options = Options::default();
     options.create_if_missing = true;
     DB::open(&path, options)
 }
-pub fn store(db: &mut MutexGuard<DB>, key: &[u8], value: &[u8]) -> Result<(), rusty_leveldb::Status>{
+pub fn store(
+    db: &mut MutexGuard<DB>,
+    key: &[u8],
+    value: &[u8],
+) -> Result<(), rusty_leveldb::Status> {
     db.put(key, value)?;
     db.flush()?;
     Ok(())

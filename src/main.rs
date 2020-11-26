@@ -2,15 +2,15 @@ extern crate hex;
 
 mod features;
 
-use std::env;
-use multihash::{Code};
+use http_types::Body;
+use multihash::Code;
 use multihash::MultihashDigest;
+use rusty_leveldb::DB;
+use std::env;
+use std::sync::{Arc, Mutex};
 use tide::Request;
 use tide::Response;
 use tide::StatusCode;
-use std::sync::{Arc, Mutex};
-use rusty_leveldb::DB;
-use http_types::Body;
 
 #[async_std::main]
 async fn main() -> tide::Result<()> {
@@ -29,7 +29,7 @@ fn listen_address() -> String {
     match env::var("TIDE_ADDR") {
         Ok(val) => val,
         Err(_e) => "127.0.0.1:8080".to_string(),
-    }   
+    }
 }
 
 async fn get_item(req: Request<Arc<Mutex<DB>>>) -> tide::Result {
@@ -48,8 +48,11 @@ async fn get_item(req: Request<Arc<Mutex<DB>>>) -> tide::Result {
     let res = features::db::read(&mut db, &bytes);
     match res {
         Some(v) => {
-            let deserialized: features::Person = serde_cbor::from_slice(&v).unwrap();
-            Ok(format!("{:#?}", deserialized).into())
+            let person: features::Person = serde_cbor::from_slice(&v).unwrap();
+            let mut resp = Response::new(StatusCode::Ok);
+            resp.set_body(Body::from_json(&person)?);
+            resp.set_content_type("application/json");
+            Ok(resp)
         }
         None => Ok(Response::new(StatusCode::NotFound)),
     }
@@ -60,9 +63,14 @@ async fn add_item(mut req: Request<Arc<Mutex<DB>>>) -> tide::Result {
     let serialized = serde_cbor::to_vec(&person)?;
     let hash = Code::Keccak224.digest(&serialized);
     let digest = hash.digest();
+
     let mut db = req.state().lock().unwrap();
     features::db::store(&mut db, digest, &serialized)?;
-    Ok(format!("{}", hex::encode(digest)).into())
+
+    let mut resp = Response::new(StatusCode::Created);
+    resp.set_body(Body::from_json(&hex::encode(digest))?);
+    resp.set_content_type("application/json");
+    Ok(resp)
 }
 
 async fn delete_item(req: Request<Arc<Mutex<DB>>>) -> tide::Result {
