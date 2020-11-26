@@ -2,6 +2,7 @@ extern crate hex;
 
 mod features;
 
+use std::env;
 use multihash::{Code};
 use multihash::MultihashDigest;
 use tide::Request;
@@ -17,8 +18,15 @@ async fn main() -> tide::Result<()> {
     let mut app = tide::with_state(locked_db);
     app.at("/:hx").get(get_item);
     app.at("/").post(add_item);
-    app.listen("127.0.0.1:8080").await?;
+    app.listen(listen_address()).await?;
     Ok(())
+}
+
+fn listen_address() -> String {
+    match env::var("TIDE_ADDR") {
+        Ok(val) => val,
+        Err(_e) => "127.0.0.1:8080".to_string(),
+    }   
 }
 
 async fn get_item(req: Request<Arc<Mutex<DB>>>) -> tide::Result {
