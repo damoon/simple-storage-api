@@ -1,12 +1,9 @@
 pub mod db;
-pub mod output;
-pub mod tools;
 
 use serde::{Deserialize, Serialize};
-use strum_macros::{Display, EnumString};
 
 //#[strum(serialize_all = "shouty_snake_case")]
-#[derive(Serialize, Deserialize, Debug, PartialEq, EnumString, Display)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub enum Role {
     ADMIN,
     USER,
