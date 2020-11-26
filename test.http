@@ -1,3 +1,9 @@
+
+GET http://127.0.0.1:8080/
+Content-Type: application/json
+
+###
+
 POST http://127.0.0.1:8080/
 Content-Type: application/json
 
@@ -6,8 +12,23 @@ Content-Type: application/json
     "age": 42,
     "role": "ADMIN"
 }
+###
+
+POST http://127.0.0.1:8080/
+Content-Type: application/json
+
+{
+    "name": "David",
+    "age": 42,
+    "role": "ADMIN"
+}
+###
+
+DELETE http://127.0.0.1:8080/ea2066916a4e5e79459a4506188362235ad7d5e684ee0c7ba4d128a7
+Content-Type: application/json
 
 ###
+
 GET http://127.0.0.1:8080/bd056a715e1df81f66be816ed4c15be84f2a8d33f94919eebc3e1b2f
 Content-Type: application/json
 
@@ -22,4 +43,3 @@ Content-Type: application/json
 ###
 GET http://127.0.0.1:8080/zz
 Content-Type: application/json
-

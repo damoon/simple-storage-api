@@ -1537,6 +1537,7 @@ dependencies = [
  "env_logger",
  "ferris-says",
  "hex",
+ "http-types",
  "lazy_static",
  "log",
  "multihash",
