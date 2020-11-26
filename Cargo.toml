@@ -11,7 +11,7 @@ edition = "2018"
 ferris-says = "0.2.0"
 strum = "0.20.0"
 strum_macros = "0.20.1"
-rusty-leveldb = "0.3.5"
+rocksdb = "0.15.0"
 serde = { version = "1.0.117", features = ["derive"] }
 serde_json = "1.0.59"
 serde_cbor = "0.11.1"

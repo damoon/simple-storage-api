@@ -5,7 +5,7 @@ mod features;
 use http_types::Body;
 use multihash::Code;
 use multihash::MultihashDigest;
-use rusty_leveldb::DB;
+use rocksdb::DB;
 use std::env;
 use std::sync::{Arc, Mutex};
 use tide::Request;
@@ -15,7 +15,7 @@ use tide::StatusCode;
 #[async_std::main]
 async fn main() -> tide::Result<()> {
     tide::log::start();
-    let locked_db = Arc::new(Mutex::new(features::db::get_database().unwrap()));
+    let locked_db = Arc::new(Mutex::new(features::db::get_database()));
     let mut app = tide::with_state(locked_db);
     app.at("/:hx").get(get_item);
     app.at("/:hx").delete(delete_item);
@@ -47,14 +47,19 @@ async fn get_item(req: Request<Arc<Mutex<DB>>>) -> tide::Result {
     let mut db = req.state().lock().unwrap();
     let res = features::db::read(&mut db, &bytes);
     match res {
-        Some(v) => {
+        Ok(Some(v)) => {
             let person: features::Person = serde_cbor::from_slice(&v).unwrap();
             let mut resp = Response::new(StatusCode::Ok);
             resp.set_body(Body::from_json(&person)?);
             resp.set_content_type("application/json");
             Ok(resp)
+        },
+        Ok(None) => Ok(Response::new(StatusCode::NotFound)),
+        Err(e) => {
+            let mut resp = Response::new(StatusCode::InternalServerError);
+            resp.set_error(e);
+            Ok(resp)
         }
-        None => Ok(Response::new(StatusCode::NotFound)),
     }
 }
 
