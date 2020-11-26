@@ -1,7 +1,7 @@
 
 use rocksdb::{DB, Error, IteratorMode};
 use std::path::Path;
-use std::sync::MutexGuard;
+use std::sync::{RwLockReadGuard, RwLockWriteGuard};
 use std::vec::Vec;
 
 pub fn get_database() -> DB {
@@ -11,17 +11,17 @@ pub fn get_database() -> DB {
     DB::open_default(path).unwrap()
 }
 
-pub fn store(db: &mut MutexGuard<DB>, key: &[u8], value: &[u8]) -> Result<(), Error> {
+pub fn store(db: &mut RwLockWriteGuard<DB>, key: &[u8], value: &[u8]) -> Result<(), Error> {
     db.put(key, value)?;
     db.flush()?;
     Ok(())
 }
 
-pub fn read(db: &mut MutexGuard<DB>, key: &[u8]) -> Result<Option<Vec<u8>>, Error> {
+pub fn read(db: &RwLockReadGuard<DB>, key: &[u8]) -> Result<Option<Vec<u8>>, Error> {
     db.get(key)
 }
 
-pub fn list(db: &mut MutexGuard<DB>) -> Vec<Vec<u8>> {
+pub fn list(db: &RwLockReadGuard<DB>) -> Vec<Vec<u8>> {
     let mut vec: Vec<Vec<u8>> = Vec::new();
     db.full_iterator(IteratorMode::Start)
       .for_each(|(i, _x)| 
@@ -30,6 +30,6 @@ pub fn list(db: &mut MutexGuard<DB>) -> Vec<Vec<u8>> {
     vec
 }
 
-pub fn delete(db: &mut MutexGuard<DB>, key: &[u8]) -> Result<(), Error> {
+pub fn delete(db: &mut RwLockWriteGuard<DB>, key: &[u8]) -> Result<(), Error> {
     db.delete(key)
 }
