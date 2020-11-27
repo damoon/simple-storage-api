@@ -19,7 +19,15 @@ mod todos;
 #[async_std::main]
 async fn main() -> tide::Result<()> {
     tide::log::start();
-    let locked_db = Arc::new(RwLock::new(state::get_database()));
+
+    // TODO: add trait and abstract /people/ <-> people::Person
+
+    let cfs = vec![
+        std::any::type_name::<people::Person>(),
+        std::any::type_name::<todos::Task>(),
+    ];
+
+    let locked_db = Arc::new(RwLock::new(state::get_database(cfs)));
     let mut app = tide::with_state(locked_db);
     
     app.at("/people/:hx").get(get_item::<people::Person>);
@@ -56,7 +64,7 @@ async fn get_item<T: Serialize + DeserializeOwned>(req: Request<Arc<RwLock<DB>>>
     }?;
 
     let db = req.state().read().unwrap();
-    let res = state::read(&db, &bytes);
+    let res = state::read(&db, std::any::type_name::<T>(), &bytes);
     match res {
         Ok(Some(v)) => {
             let item: T = serde_cbor::from_reader(&v[..]).unwrap();
@@ -81,7 +89,7 @@ async fn add_item<T: Serialize + DeserializeOwned>(mut req: Request<Arc<RwLock<D
     let digest = hash.digest();
 
     let mut db = req.state().write().unwrap();
-    state::store(&mut db, digest, &serialized)?;
+    state::store(&mut db,std::any::type_name::<T>(), digest, &serialized)?;
 
     let mut resp = Response::new(StatusCode::Created);
     resp.set_body(Body::from_json(&hex::encode(digest))?);
@@ -102,13 +110,13 @@ async fn delete_item<T>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     }?;
 
     let mut db = req.state().write().unwrap();
-    state::delete(&mut db, &bytes)?;
+    state::delete(&mut db, std::any::type_name::<T>(), &bytes)?;
     Ok(Response::new(StatusCode::NoContent))
 }
 
 async fn list_items<T>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     let db = req.state().read().unwrap();
-    let vec = state::list(&db);
+    let vec = state::list(&db, std::any::type_name::<T>());
 
     let mut ls: Vec<String> = Vec::new();
     for v in vec {
