@@ -1,7 +1,5 @@
 extern crate hex;
 
-mod features;
-
 use http_types::Body;
 use multihash::Code;
 use multihash::MultihashDigest;
@@ -11,16 +9,29 @@ use std::sync::{Arc, RwLock};
 use tide::Request;
 use tide::Response;
 use tide::StatusCode;
+use serde::Serialize;
+use serde::de::DeserializeOwned;
+
+mod state;
+mod people;
+mod todos;
 
 #[async_std::main]
 async fn main() -> tide::Result<()> {
     tide::log::start();
-    let locked_db = Arc::new(RwLock::new(features::db::get_database()));
+    let locked_db = Arc::new(RwLock::new(state::get_database()));
     let mut app = tide::with_state(locked_db);
-    app.at("/:hx").get(get_item);
-    app.at("/:hx").delete(delete_item);
-    app.at("/").post(add_item);
-    app.at("/").get(list_items);
+    
+    app.at("/people/:hx").get(get_item::<people::Person>);
+    app.at("/people/:hx").delete(delete_item::<people::Person>);
+    app.at("/people/").post(add_item::<people::Person>);
+    app.at("/people/").get(list_items::<people::Person>);
+    
+    app.at("/todos/:hx").get(get_item::<todos::Task>);
+    app.at("/todos/:hx").delete(delete_item::<todos::Task>);
+    app.at("/todos/").post(add_item::<todos::Task>);
+    app.at("/todos/").get(list_items::<todos::Task>);
+
     app.listen(listen_address()).await?;
     Ok(())
 }
@@ -32,7 +43,7 @@ fn listen_address() -> String {
     }
 }
 
-async fn get_item(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
+async fn get_item<T: Serialize + DeserializeOwned>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     let hx: &str = req.param("hx")?;
 
     let bytes = match hex::decode(hx) {
@@ -45,15 +56,15 @@ async fn get_item(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     }?;
 
     let db = req.state().read().unwrap();
-    let res = features::db::read(&db, &bytes);
+    let res = state::read(&db, &bytes);
     match res {
         Ok(Some(v)) => {
-            let person: features::Person = serde_cbor::from_slice(&v).unwrap();
+            let item: T = serde_cbor::from_reader(&v[..]).unwrap();
             let mut resp = Response::new(StatusCode::Ok);
-            resp.set_body(Body::from_json(&person)?);
+            resp.set_body(Body::from_json(&item)?);
             resp.set_content_type("application/json");
             Ok(resp)
-        },
+        }
         Ok(None) => Ok(Response::new(StatusCode::NotFound)),
         Err(e) => {
             let mut resp = Response::new(StatusCode::InternalServerError);
@@ -63,14 +74,14 @@ async fn get_item(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     }
 }
 
-async fn add_item(mut req: Request<Arc<RwLock<DB>>>) -> tide::Result {
-    let person: features::Person = req.body_json().await?;
-    let serialized = serde_cbor::to_vec(&person)?;
+async fn add_item<T: Serialize + DeserializeOwned>(mut req: Request<Arc<RwLock<DB>>>) -> tide::Result {
+    let item: T = req.body_json().await?;
+    let serialized = serde_cbor::to_vec(&item)?;
     let hash = Code::Keccak224.digest(&serialized);
     let digest = hash.digest();
 
     let mut db = req.state().write().unwrap();
-    features::db::store(&mut db, digest, &serialized)?;
+    state::store(&mut db, digest, &serialized)?;
 
     let mut resp = Response::new(StatusCode::Created);
     resp.set_body(Body::from_json(&hex::encode(digest))?);
@@ -78,7 +89,7 @@ async fn add_item(mut req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     Ok(resp)
 }
 
-async fn delete_item(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
+async fn delete_item<T>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     let hx: &str = req.param("hx")?;
 
     let bytes = match hex::decode(hx) {
@@ -91,13 +102,13 @@ async fn delete_item(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     }?;
 
     let mut db = req.state().write().unwrap();
-    features::db::delete(&mut db, &bytes)?;
+    state::delete(&mut db, &bytes)?;
     Ok(Response::new(StatusCode::NoContent))
 }
 
-async fn list_items(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
+async fn list_items<T>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     let db = req.state().read().unwrap();
-    let vec = features::db::list(&db);
+    let vec = state::list(&db);
 
     let mut ls: Vec<String> = Vec::new();
     for v in vec {

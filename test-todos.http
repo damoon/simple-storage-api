@@ -1,0 +1,51 @@
+
+GET http://127.0.0.1:8080/todos/
+Content-Type: application/json
+
+###
+
+POST http://127.0.0.1:8080/todos/
+Content-Type: application/json
+
+{
+    "describtion": "Stefan",
+    "is_done": true
+}
+###
+
+POST http://127.0.0.1:8080/todos/
+Content-Type: application/json
+
+{
+    "describtion": "David",
+    "is_done": false
+}
+
+###
+# this is a person
+GET http://127.0.0.1:8080/todo/ea2066916a4e5e79459a4506188362235ad7d5e684ee0c7ba4d128a7
+Content-Type: application/json
+
+###
+
+
+
+DELETE http://127.0.0.1:8080/todos/1c4e2e4d830b3356ac955b9554418628a6636453d4df41dead7efc23
+Content-Type: application/json
+
+###
+
+GET http://127.0.0.1:8080/todos/06434c6f8a0ecbfab424eebed76976d0fd4289ee0952b844677b0e55
+Content-Type: application/json
+
+###
+GET http://127.0.0.1:8080/todos/1a
+Content-Type: application/json
+
+###
+GET http://127.0.0.1:8080/todos/1
+Content-Type: application/json
+
+###
+GET http://127.0.0.1:8080/todos/zz
+Content-Type: application/json

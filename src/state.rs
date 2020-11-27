@@ -1,5 +1,4 @@
-
-use rocksdb::{DB, Error, IteratorMode};
+use rocksdb::{Error, IteratorMode, DB};
 use std::path::Path;
 use std::sync::{RwLockReadGuard, RwLockWriteGuard};
 use std::vec::Vec;
@@ -24,9 +23,7 @@ pub fn read(db: &RwLockReadGuard<DB>, key: &[u8]) -> Result<Option<Vec<u8>>, Err
 pub fn list(db: &RwLockReadGuard<DB>) -> Vec<Vec<u8>> {
     let mut vec: Vec<Vec<u8>> = Vec::new();
     db.full_iterator(IteratorMode::Start)
-      .for_each(|(i, _x)| 
-        vec.push(i.into_vec())
-    );
+        .for_each(|(i, _x)| vec.push(i.into_vec()));
     vec
 }
 
