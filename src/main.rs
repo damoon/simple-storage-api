@@ -3,14 +3,16 @@ extern crate hex;
 use http_types::Body;
 use multihash::Code;
 use multihash::MultihashDigest;
-use rocksdb::DB;
+use rocksdb::{DB, Options};
 use std::env;
 use std::sync::{Arc, RwLock};
 use tide::Request;
 use tide::Response;
 use tide::StatusCode;
+use tide::Server;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
+use std::sync::Once;
 
 mod state;
 mod people;
@@ -20,28 +22,21 @@ mod todos;
 async fn main() -> tide::Result<()> {
     tide::log::start();
 
-    // TODO: add trait and abstract /people/ <-> people::Person
-
-    let cfs = vec![
-        std::any::type_name::<people::Person>(),
-        std::any::type_name::<todos::Task>(),
-    ];
-
-    let locked_db = Arc::new(RwLock::new(state::get_database(cfs)));
+    let locked_db = Arc::new(RwLock::new(state::get_database()));
     let mut app = tide::with_state(locked_db);
-    
-    app.at("/people/:hx").get(get_item::<people::Person>);
-    app.at("/people/:hx").delete(delete_item::<people::Person>);
-    app.at("/people/").post(add_item::<people::Person>);
-    app.at("/people/").get(list_items::<people::Person>);
-    
-    app.at("/todos/:hx").get(get_item::<todos::Task>);
-    app.at("/todos/:hx").delete(delete_item::<todos::Task>);
-    app.at("/todos/").post(add_item::<todos::Task>);
-    app.at("/todos/").get(list_items::<todos::Task>);
+
+    add_handlers::<people::Person>(&mut app, "people");
+    add_handlers::<todos::Task>(&mut app, "todos");
 
     app.listen(listen_address()).await?;
     Ok(())
+}
+
+fn add_handlers<T: 'static + Serialize + DeserializeOwned>(app: &mut Server<Arc<RwLock<DB>>>, path: &str) {
+    app.at(format!("/{}/:hx", path).as_str()).get(get_item::<T>);
+    app.at(format!("/{}/:hx", path).as_str()).delete(delete_item::<T>);
+    app.at(format!("/{}/", path).as_str()).post(add_item::<T>);
+    app.at(format!("/{}/", path).as_str()).get(list_items::<T>);
 }
 
 fn listen_address() -> String {
@@ -51,6 +46,7 @@ fn listen_address() -> String {
     }
 }
 
+static GET_ITEM_INIT: Once = Once::new();
 async fn get_item<T: Serialize + DeserializeOwned>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     let hx: &str = req.param("hx")?;
 
@@ -63,8 +59,15 @@ async fn get_item<T: Serialize + DeserializeOwned>(req: Request<Arc<RwLock<DB>>>
         val => val,
     }?;
 
+    let prefix = std::any::type_name::<T>();
+    GET_ITEM_INIT.call_once(|| {
+        let mut db = req.state().write().unwrap();
+        let opts = Options::default();
+        db.create_cf(prefix, &opts).unwrap();
+    });
+
     let db = req.state().read().unwrap();
-    let res = state::read(&db, std::any::type_name::<T>(), &bytes);
+    let res = state::read(&db, prefix, &bytes);
     match res {
         Ok(Some(v)) => {
             let item: T = serde_cbor::from_reader(&v[..]).unwrap();
@@ -82,14 +85,22 @@ async fn get_item<T: Serialize + DeserializeOwned>(req: Request<Arc<RwLock<DB>>>
     }
 }
 
+static ADD_ITEM_INIT: Once = Once::new();
 async fn add_item<T: Serialize + DeserializeOwned>(mut req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     let item: T = req.body_json().await?;
     let serialized = serde_cbor::to_vec(&item)?;
     let hash = Code::Keccak224.digest(&serialized);
     let digest = hash.digest();
 
+    let prefix = std::any::type_name::<T>();
+    ADD_ITEM_INIT.call_once(|| {
+        let mut db = req.state().write().unwrap();
+        let opts = Options::default();
+        db.create_cf(prefix, &opts).unwrap();
+    });
+
     let mut db = req.state().write().unwrap();
-    state::store(&mut db,std::any::type_name::<T>(), digest, &serialized)?;
+    state::store(&mut db, prefix, digest, &serialized)?;
 
     let mut resp = Response::new(StatusCode::Created);
     resp.set_body(Body::from_json(&hex::encode(digest))?);
@@ -97,6 +108,7 @@ async fn add_item<T: Serialize + DeserializeOwned>(mut req: Request<Arc<RwLock<D
     Ok(resp)
 }
 
+static DELETE_ITEM_INIT: Once = Once::new();
 async fn delete_item<T>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     let hx: &str = req.param("hx")?;
 
@@ -109,14 +121,29 @@ async fn delete_item<T>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
         val => val,
     }?;
 
+    let prefix = std::any::type_name::<T>();
+    DELETE_ITEM_INIT.call_once(|| {
+        let mut db = req.state().write().unwrap();
+        let opts = Options::default();
+        db.create_cf(prefix, &opts).unwrap();
+    });
+
     let mut db = req.state().write().unwrap();
-    state::delete(&mut db, std::any::type_name::<T>(), &bytes)?;
+    state::delete(&mut db, prefix, &bytes)?;
     Ok(Response::new(StatusCode::NoContent))
 }
 
+static LIST_ITEMS_INIT: Once = Once::new();
 async fn list_items<T>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
+    let prefix = std::any::type_name::<T>();
+    LIST_ITEMS_INIT.call_once(|| {
+        let mut db = req.state().write().unwrap();
+        let opts = Options::default();
+        db.create_cf(prefix, &opts).unwrap();
+    });
+
     let db = req.state().read().unwrap();
-    let vec = state::list(&db, std::any::type_name::<T>());
+    let vec = state::list(&db, prefix);
 
     let mut ls: Vec<String> = Vec::new();
     for v in vec {
