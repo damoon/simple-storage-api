@@ -3,7 +3,7 @@ extern crate hex;
 use http_types::Body;
 use multihash::Code;
 use multihash::MultihashDigest;
-use rocksdb::DB;
+use sled::Db;
 use std::env;
 use std::sync::{Arc, RwLock};
 use tide::Request;
@@ -36,7 +36,7 @@ async fn main() -> tide::Result<()> {
     Ok(())
 }
 
-fn add_handlers<T: 'static + Serialize + DeserializeOwned>(app: &mut Server<Arc<RwLock<DB>>>, path: &str) {
+fn add_handlers<T: 'static + Serialize + DeserializeOwned>(app: &mut Server<Arc<RwLock<Db>>>, path: &str) {
     app.at(format!("/{}/:hx", path).as_str()).get(get_item::<T>);
     app.at(format!("/{}/:hx", path).as_str()).delete(delete_item::<T>);
     app.at(format!("/{}/", path).as_str()).post(add_item::<T>);
@@ -50,7 +50,7 @@ fn listen_address() -> String {
     }
 }
 
-async fn get_item<T: Serialize + DeserializeOwned>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
+async fn get_item<T: Serialize + DeserializeOwned>(req: Request<Arc<RwLock<Db>>>) -> tide::Result {
     let hx: &str = req.param("hx")?;
 
     let bytes = match hex::decode(hx) {
@@ -82,7 +82,7 @@ async fn get_item<T: Serialize + DeserializeOwned>(req: Request<Arc<RwLock<DB>>>
     }
 }
 
-async fn add_item<T: Serialize + DeserializeOwned>(mut req: Request<Arc<RwLock<DB>>>) -> tide::Result {
+async fn add_item<T: Serialize + DeserializeOwned>(mut req: Request<Arc<RwLock<Db>>>) -> tide::Result {
     let item: T = req.body_json().await?;
     let serialized = serde_cbor::to_vec(&item)?;
     let hash = Code::Keccak224.digest(&serialized);
@@ -98,7 +98,7 @@ async fn add_item<T: Serialize + DeserializeOwned>(mut req: Request<Arc<RwLock<D
     Ok(resp)
 }
 
-async fn delete_item<T>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
+async fn delete_item<T>(req: Request<Arc<RwLock<Db>>>) -> tide::Result {
     let hx: &str = req.param("hx")?;
 
     let bytes = match hex::decode(hx) {
@@ -116,10 +116,10 @@ async fn delete_item<T>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
     Ok(Response::new(StatusCode::NoContent))
 }
 
-async fn list_items<T>(req: Request<Arc<RwLock<DB>>>) -> tide::Result {
+async fn list_items<T>(req: Request<Arc<RwLock<Db>>>) -> tide::Result {
     let prefix = std::any::type_name::<T>();
     let db = req.state().read().unwrap();
-    let vec = state::list(&db, prefix);
+    let vec = state::list(&db, prefix)?;
 
     let mut ls: Vec<String> = Vec::new();
     for v in vec {
